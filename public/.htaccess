@@ -1,0 +1,78 @@
+# 1. Basic Setup
+Options -Indexes -MultiViews +FollowSymLinks
+DirectoryIndex index.php
+
+# 2. Enable Rewrite Engine
+RewriteEngine On
+RewriteBase /
+
+# 3. Security Headers
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+    Header set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"
+</IfModule>
+
+# 4. PHP Settings (jika menggunakan mod_php)
+<IfModule mod_php7.c>
+    php_value upload_max_filesize 20M
+    php_value post_max_size 22M
+    php_value memory_limit 256M
+    php_value max_execution_time 300
+    php_value session.cookie_httponly 1
+    php_value session.cookie_secure 1
+    php_value session.use_strict_mode 1
+</IfModule>
+
+# 5. URL Routing
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# API Routes
+RewriteRule ^api/(.*)$ public/api.php?endpoint=$1 [QSA,L]
+
+# Web Routes
+RewriteRule ^(list|detail)/?$ public/$1.php [L]
+RewriteRule ^$ public/index.php [L]
+
+# 6. Cache Control
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css "access plus 1 week"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/webp "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    ExpiresByType font/woff2 "access plus 1 year"
+    ExpiresDefault "access plus 2 days"
+</IfModule>
+
+# 7. Gzip Compression
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json
+</IfModule>
+
+# 8. Error Handling
+ErrorDocument 400 /public/errors/400.php
+ErrorDocument 403 /public/errors/403.php
+ErrorDocument 404 /public/errors/404.php
+ErrorDocument 500 /public/errors/500.php
+
+# 9. Protect Sensitive Files
+<FilesMatch "\.(env|log|htaccess|htpasswd|ini|phps|fla|psd|log|sh|sql)$">
+    Require all denied
+</FilesMatch>
+
+# 10. Prevent Directory Listing
+IndexIgnore *
+
+# 11. Redirect Trailing Slashes
+RewriteCond %{REQUEST_URI} /+[^\.]+$
+RewriteRule ^(.+[^/])$ %{REQUEST_URI}/ [R=301,L]
+
+# 12. Force HTTPS (uncomment jika menggunakan SSL)
+# RewriteCond %{HTTPS} off
+# RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
